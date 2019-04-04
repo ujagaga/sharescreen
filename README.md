@@ -6,6 +6,6 @@ The script does require Flask and pyscreenshot but it will install those librari
 python3 screenshare.py
 
 You can also specify a port like:
-python3 screenshare.py <port>
+python3 screenshare.py 89000
   
 On windows, you might need to run the script two or three times untill all dependencies are installed.
