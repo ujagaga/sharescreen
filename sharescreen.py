@@ -12,18 +12,25 @@ import sys
 from time import sleep
 from os import execv, name as osname
 
+
 def restart():
     sleep(1)
     execv(__file__, sys.argv)
 
 try:
-    from pyscreenshot import grab
+    from pyscreenshot import Image
     from flask import Flask, send_file, send_from_directory, render_template
+    from numpy import asarray
+    from mss import mss
+    import cv2
 except:
     # failed. probably do not have pyscreenshot installed
     run(("pip3", "install", "pyscreenshot"))
     run(("pip3", "install", "image"))
     run(("pip3", "install", "Flask"))
+    run(("pip3", "install", "mss"))
+    run(("pip3", "install", "opencv-python"))
+    run(("pip3", "install", "numpy"))
     restart()
 
 
@@ -34,15 +41,58 @@ if len(sys.argv) > 1:
     if request_port < 65000 and request_port > 3000:
         user_port = request_port
 
+monitorId = 1
 
 app = Flask(__name__)
+
+
+def getMonitor():
+    global monitorId
+
+    with mss() as sct:
+
+        mon = sct.monitors[monitorId]
+
+        # The screen part to capture
+        monitor = {
+            "top": mon["top"],
+            "left": mon["left"],
+            "width": mon["width"],
+            "height": mon["height"],
+            "mon": monitorId
+        }
+
+        sct.compression_level = 2
+
+        im_arr = asarray(sct.grab(monitor))
+
+        im_arr = cv2.cvtColor(im_arr, cv2.COLOR_BGR2RGB)
+
+        img = Image.fromarray(im_arr)
+
+        return img
+
 
 @app.route('/screen.png')
 def serve_pil_image():
     img_buffer = BytesIO()
-    grab().save(img_buffer, 'PNG')
+    img = getMonitor()
+    img.save(img_buffer, 'PNG')
     img_buffer.seek(0)
     return send_file(img_buffer, mimetype='image/png')
+
+
+@app.route('/switchmonitor')
+def switchMonitor():
+    global monitorId
+
+    if monitorId < 2:
+        monitorId = 2
+    else:
+        monitorId = 1
+
+    return "OK"
+
 
 @app.route('/')
 def serve_screen():
@@ -69,35 +119,19 @@ def serve_screen():
     
           document.addEventListener("DOMContentLoaded", fetchImage)
           
-          function chgsize(){
-            var ss = document.getElementById("sizesel");
-            var sval = ss.options[ss.selectedIndex].value;
-            document.images["screen"].style.width = sval;           
-          }
-          
-          function chgalignment(){
-            var as = document.getElementById("alignsel");
-            var sval = as.options[as.selectedIndex].value;
-            document.images["screen"].align=sval;            
-          }
+        function switchMon(){
+            const Http = new XMLHttpRequest();
+            const url='/switchmonitor';
+            Http.open("GET", url);
+            Http.send();            
+        }
           
         </script>
       </head>
       <body>
-        <div style="width:13em; border:1px solid black;background:white;text-align: center; padding:0; position:absolute;">
-            Size:
-            <select id="sizesel" onchange="chgsize()">
-              <option value="100%">x1</option>
-              <option value="200%">x2</option>
-            </select>    
-            Show:
-            <select id="alignsel" onchange="chgalignment()">
-              <option value="left">Left</option>
-              <option value="right">Right</option>
-            </select>            
-        </div>
-        
-        <img style="width:100%;" id="screen"> 
+        <button type="button" style="position:absolute;background-color:blue;color:white;padding:10px;text-align:center;" onclick="switchMon()">Switch monitor</button>
+               
+        <img style="width:100%;" id="screen">
         
       </body>
     </html>
