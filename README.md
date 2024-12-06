@@ -9,3 +9,11 @@ You can also specify a port like:
 python3 sharescreen.py 89000
   
 On windows, you might need to run the script two or three times untill all dependencies are installed.
+
+## Running in a virtual environment
+
+	`python3 -m venv venv`
+	`source ./venv/bin/activate`
+	`python sharescreen.py`
+
+After creating a virtual environment, you can just run sharescreen.sh.
